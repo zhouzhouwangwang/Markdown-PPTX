@@ -1,0 +1,19 @@
+output/*
+!output/.gitkeep
+vendor/html2pptx/node_modules/
+.venv/
+.pylibs/
+.pytest_cache/
+pytest-cache-files-*/
+tests/.fixtures-*/
+tests/fixtures-*/
+__pycache__/
+*.pyc
+.env
+# uploaded deck images + baked background caches (runtime data, not source)
+assets/*
+!assets/.gitkeep
+# host test runtime: Chromium browsers + playwright module (heavy, machine-local)
+.test-runtime/
+# probe run artifacts (converter/browser probe outputs, not source)
+.probe/*.pptx

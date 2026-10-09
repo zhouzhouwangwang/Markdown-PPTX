@@ -1,0 +1,3 @@
+# Dev and test extras (the service itself needs only requirements.txt).
+pytest>=8.0
+httpx>=0.27

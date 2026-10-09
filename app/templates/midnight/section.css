@@ -1,0 +1,19 @@
+/* Midnight dark content slide. {{WIDTH}}/{{HEIGHT}} are the canvas size. */
+html, body { width: {{WIDTH}}px; height: {{HEIGHT}}px; margin: 0; overflow: hidden; }
+* { box-sizing: border-box; }
+body {
+  font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", "Source Han Sans SC", Arial, sans-serif;
+  background: #0f172a;
+}
+.band { position: absolute; left: 0; top: 0; width: {{WIDTH}}px; height: 8px; background: #38bdf8; }
+.num { position: absolute; left: 90px; top: 68px; width: 400px; }
+.num p { margin: 0; color: #7dd3fc; font-size: 17px; font-weight: 700; letter-spacing: 3px; }
+.head { position: absolute; left: 90px; top: 100px; width: {{CONTENT_WIDTH}}px; }
+h2 { margin: 0; color: #f8fafc; font-size: 38px; line-height: 1.25; font-weight: 700; }
+.rule { position: absolute; left: 90px; top: 182px; width: 96px; height: 4px; background: #38bdf8; }
+.content { position: absolute; left: 90px; top: 230px; width: {{CONTENT_WIDTH}}px; }
+li { margin: 0 0 21px 0; color: #cbd5e1; font-size: 25px; line-height: 1.5; }
+p { margin: 0 0 18px 0; color: #cbd5e1; font-size: 25px; line-height: 1.5; }
+.subhead { margin: 0 0 12px 0; color: #f8fafc; font-size: 27px; font-weight: 700; line-height: 1.5; }
+.lead { margin: 0 0 18px 0; color: #7dd3fc; font-size: 25px; line-height: 1.5; font-weight: 700; }
+.figcaption { margin: 6px 0 16px 0; color: #94a3b8; font-size: 16px; line-height: 1.4; }

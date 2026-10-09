@@ -1,0 +1,24 @@
+# Production stack: code comes from the image; the output and assets
+# directories are mounted so generated decks and uploaded images survive
+# container replacement (uploads land in the host's pptsvc/assets/).
+services:
+  pptsvc:
+    build:
+      context: .
+      args:
+        BASE_IMAGE: ${BASE_IMAGE:-docker.1ms.run/library/node:20-bookworm-slim}
+        DEBIAN_MIRROR: ${DEBIAN_MIRROR:-mirrors.tuna.tsinghua.edu.cn}
+        PLAYWRIGHT_DOWNLOAD_HOST: ${PLAYWRIGHT_DOWNLOAD_HOST:-https://cdn.npmmirror.com/binaries/playwright}
+    image: pptsvc:latest
+    container_name: pptsvc
+    ports:
+      - "${PPTSVC_PORT:-8000}:8000"
+    volumes:
+      - ./output:/srv/pptsvc/output
+      - ./assets:/srv/pptsvc/assets
+    environment:
+      PPTSVC_OUTPUT_DIR: /srv/pptsvc/output
+      PPTSVC_MAX_CONCURRENCY: "${PPTSVC_MAX_CONCURRENCY:-2}"
+      PPTSVC_TIMEOUT_SECONDS: "${PPTSVC_TIMEOUT_SECONDS:-300}"
+      PPTSVC_KEEP_HTML: "1"
+    restart: unless-stopped

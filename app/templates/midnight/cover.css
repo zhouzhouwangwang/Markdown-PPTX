@@ -1,0 +1,12 @@
+/* Midnight dark cover slide. */
+html, body { width: {{WIDTH}}px; height: {{HEIGHT}}px; margin: 0; overflow: hidden; }
+* { box-sizing: border-box; }
+body {
+  font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", "Source Han Sans SC", Arial, sans-serif;
+  background: #0f172a;
+}
+.band { position: absolute; left: 0; top: 0; width: {{WIDTH}}px; height: 12px; background: #38bdf8; }
+.wrap { position: absolute; left: 110px; top: 220px; width: {{WRAP_WIDTH}}px; }
+.kicker { margin: 0 0 20px 0; color: #7dd3fc; font-size: 20px; font-weight: 700; letter-spacing: 4px; }
+h1 { margin: 0 0 28px 0; color: #f8fafc; font-size: 62px; line-height: 1.15; font-weight: 700; }
+.sub { margin: 0; color: #94a3b8; font-size: 24px; line-height: 1.5; width: {{SUB_WIDTH}}px; }

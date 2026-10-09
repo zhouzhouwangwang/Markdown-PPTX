@@ -1,0 +1,872 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pptsvc · 接口测试台</title>
+<style>
+  :root {
+    --ink: #0f172a; --muted: #64748b; --line: #e2e8f0;
+    --blue: #2563eb; --blue-soft: #dbeafe;
+    --ok: #16a34a; --ok-soft: #dcfce7;
+    --warn: #b45309; --warn-soft: #fef3c7;
+    --bad: #dc2626; --bad-soft: #fee2e2;
+    --card: #ffffff; --bg: #f1f5f9;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+  header { background: #0f172a; color: #e2e8f0; }
+  .hwrap { max-width: 1240px; margin: 0 auto; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  header h1 { font-size: 17px; margin: 0; font-weight: 600; letter-spacing: .5px; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 10px; border-radius: 999px; background: #1e293b; color: #94a3b8; white-space: nowrap; }
+  .badge.ok { background: var(--ok-soft); color: var(--ok); }
+  .badge.bad { background: var(--bad-soft); color: var(--bad); }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 20px; display: grid; gap: 20px; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); align-items: start; }
+  @media (max-width: 1020px) { .wrap { grid-template-columns: 1fr; } }
+  .card { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; box-shadow: 0 1px 2px rgb(15 23 42 / 4%); }
+  .card h2 { font-size: 13px; margin: 0 0 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+  label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
+  textarea { width: 100%; min-height: 360px; resize: vertical; padding: 12px 14px; font: 13px/1.65 Consolas, "Courier New", monospace; color: var(--ink); background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; }
+  textarea:focus { outline: 2px solid var(--blue); outline-offset: -1px; background: #fff; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+  .spread { justify-content: space-between; }
+  .field { display: flex; flex-direction: column; }
+  input[type=text], input[type=number], select { padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #fff; color: var(--ink); }
+  select.off { opacity: .5; }
+  .pingrid { display: grid; grid-template-columns: repeat(3, 18px); gap: 3px; }
+  .pingrid button { width: 18px; height: 18px; padding: 0; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff; cursor: pointer; }
+  .pingrid button:hover { border-color: var(--blue); }
+  .pingrid button.on { background: var(--blue); border-color: var(--blue); }
+  #cfgPin label, .cfg label { font-size: 12px; color: #475569; display: inline-flex; align-items: center; gap: 4px; }
+  .cfg label[hidden], .cfg span[hidden] { display: none; }  /* 同 .cfg[hidden] 教训：防 display 覆盖 */
+  #imgModal { position: fixed; inset: 0; background: rgba(15,23,42,.45); display: flex; align-items: center; justify-content: center; z-index: 50; }
+  #imgModal[hidden] { display: none; }
+  .modal-card { background: #fff; border-radius: 12px; padding: 18px; width: 480px; max-width: 92vw; box-shadow: 0 12px 40px rgba(0,0,0,.22); }
+  .typecards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .typecard { display: flex; flex-direction: column; gap: 2px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc; cursor: pointer; text-align: left; font-size: 13px; }
+  .typecard.on { border-color: var(--blue); background: #eff6ff; }
+  .typecard span { font-size: 11px; color: #64748b; }
+  .cfg { padding: 10px; border: 1px dashed #e2e8f0; border-radius: 8px; margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .cfg[hidden] { display: none; }  /* 恢复 hidden 语义——否则上面的 display:flex 会覆盖它 */
+  .modal-actions { display: flex; gap: 8px; }
+  #ctxMenu { position: fixed; z-index: 60; background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.16); padding: 4px; min-width: 168px; }
+  #ctxMenu[hidden] { display: none; }
+  #ctxMenu button { display: block; width: 100%; padding: 7px 12px; border: 0; background: none; text-align: left; font-size: 13px; border-radius: 6px; cursor: pointer; }
+  #ctxMenu button:hover { background: #eff6ff; }
+  #ctxMenu hr { border: 0; border-top: 1px solid #e2e8f0; margin: 4px 0; }
+  #rcTip { position: absolute; right: 14px; top: -10px; background: #0f172a; color: #fff; font-size: 12px; padding: 5px 10px; border-radius: 999px; z-index: 5; }
+  input:focus, select:focus { outline: 2px solid var(--blue); outline-offset: -1px; }
+  button { font: 600 13px/1 inherit; padding: 10px 18px; border-radius: 8px; border: 1px solid transparent; cursor: pointer; transition: filter .12s; }
+  button:disabled { opacity: .55; cursor: wait; }
+  button:hover:not(:disabled) { filter: brightness(.96); }
+  .primary { background: var(--blue); color: #fff; }
+  .plain { background: #fff; color: var(--ink); border-color: #cbd5e1; }
+  .ghost { background: transparent; color: var(--muted); border-color: transparent; padding: 6px 10px; }
+  .ghost:hover { color: var(--ink); }
+  .stats { font-size: 12px; color: var(--muted); }
+  .panel { margin-top: 10px; padding: 10px 12px; border-radius: 8px; font-size: 13px; line-height: 1.7; }
+  .panel.warn { background: var(--warn-soft); color: var(--warn); }
+  .panel.info { background: var(--blue-soft); color: #1e40af; }
+  .panel.err { background: var(--bad-soft); color: var(--bad); }
+  .panel ul, #checks { margin: 6px 0 0; padding-left: 20px; }
+  .panel li { margin: 2px 0; }
+  details { margin-top: 10px; font-size: 13px; }
+  summary { cursor: pointer; color: var(--blue); user-select: none; }
+  .contract { margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 10px; }
+  .contract ul { margin: 8px 0 0; padding-left: 20px; color: var(--muted); font-size: 12.5px; line-height: 1.8; }
+  .contract code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 12px; color: var(--ink); }
+  .options { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .actions { margin-top: 14px; align-items: center; }
+  .hint { margin-top: 10px; font-size: 12px; color: var(--muted); }
+  .col { display: grid; gap: 20px; min-width: 0; }
+  .pvbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .pvtabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pvtabs button { font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 999px; background: #f1f5f9; color: var(--muted); border: 1px solid var(--line); }
+  .pvtabs button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .pvtabs button.bad { background: var(--bad-soft); color: var(--bad); border-color: var(--bad); }
+  .pvframe { position: relative; width: 100%; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+  .pvframe iframe { position: absolute; left: 0; top: 0; border: 0; transform-origin: 0 0; background: #fff; }
+  .pv-empty { color: var(--muted); font-size: 13px; line-height: 1.8; padding: 28px 12px; text-align: center; border: 1px dashed var(--line); border-radius: 8px; }
+  .empty { color: var(--muted); font-size: 13px; padding: 40px 0; text-align: center; border: 1px dashed var(--line); border-radius: 8px; }
+  .statusline { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 14px; }
+  .meta-grid > div { background: #f8fafc; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+  .meta-grid code { font-size: 12px; word-break: break-all; }
+  .meta-grid .v { font-size: 14px; font-weight: 600; margin-top: 2px; display: block; }
+  #checks { list-style: none; padding: 0; margin: 6px 0 14px; display: grid; gap: 4px; }
+  #checks li { font-size: 13px; display: flex; gap: 8px; align-items: baseline; }
+  #checks .yes { color: var(--ok); } #checks .no { color: var(--bad); font-weight: 700; }
+  #download { display: inline-block; margin-bottom: 4px; text-decoration: none; }
+  pre { background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 8px; overflow: auto; font-size: 12px; line-height: 1.6; max-height: 340px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="hwrap">
+    <h1>pptsvc · 接口测试台</h1>
+    <div id="health" class="badge">正在检查服务…</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- ======================= 请求 ======================= -->
+  <section class="card">
+    <h2>请求 · POST /v1/decks</h2>
+
+    <label for="md">markdown 稿件（直接粘贴）</label>
+    <textarea id="md" spellcheck="false" placeholder="# 标题&#10;&#10;> 引导语&#10;&#10;---&#10;&#10;## 第一节&#10;&#10;- 要点一&#10;- 要点二"></textarea>
+
+    <div class="row spread" style="margin-top:6px">
+      <div class="stats" id="stats">0 行 · 0 字符</div>
+      <div class="row">
+        <button class="ghost" id="btnImg" type="button">插入图片</button>
+        <button class="ghost" id="btnExample" type="button">填入示例</button>
+        <button class="ghost" id="btnClear" type="button">清空</button>
+      </div>
+    </div>
+
+    <!-- 图片插入向导：类型先行，每类型只显示自己的配置（零表单噪声） -->
+    <div id="imgModal" hidden>
+      <div class="modal-card">
+        <h3 style="margin:0 0 10px 0">插入图片</h3>
+        <div class="typecards">
+          <button type="button" class="typecard on" data-type="figure"><b>流式配图</b><span>随文字排版 · 有说明文字</span></button>
+          <button type="button" class="typecard" data-type="pin"><b>贴图 · 九宫格</b><span>自由钉位 · 不占版面</span></button>
+          <button type="button" class="typecard" data-type="background"><b>背景图</b><span>整页或内容区铺底</span></button>
+          <button type="button" class="typecard" data-type="logo"><b>Logo</b><span>品牌标识 · 无需参数</span></button>
+        </div>
+        <div id="cfgFigure" class="cfg">
+          <label id="figSizeLbl">宽度 <select id="imgSize"><option value="half">50% 宽</option><option value="quarter">25% 宽</option><option value="full">整行</option></select></label>
+          <label id="figPosLbl">位置 <select id="imgPos"><option value="center">居中</option><option value="left">居左</option><option value="right">居右</option></select></label>
+          <label><input type="checkbox" id="figFill"> 填充本页剩余空间</label>
+          <span id="figFillZ" hidden><label>z <input type="number" id="figZ" value="10" style="width:52px" title="0=背板模式（放大到内容区、渲染在文字下方）；10=流式填充（吃满剩余空白）"></label></span>
+        </div>
+        <div id="cfgPin" class="cfg" hidden>
+          <span class="pingrid" id="pinGrid" title="九宫格锚点（相对整页）：图的对角贴所选格的对角；多选时连续=包围盒、非连续=碎片蒙版">
+            <button type="button" data-pin="tl"></button><button type="button" data-pin="t"></button><button type="button" data-pin="tr"></button><button type="button" data-pin="l"></button><button type="button" data-pin="c" class="on"></button><button type="button" data-pin="r"></button><button type="button" data-pin="bl"></button><button type="button" data-pin="b"></button><button type="button" data-pin="br"></button>
+          </span>
+          <label><input type="checkbox" id="pinMulti"> 多选</label>
+          <label>w <input type="number" id="pinW" value="30" min="5" max="100" style="width:52px">%</label>
+          <label>dx <input type="number" id="pinDx" value="0" style="width:56px"></label>
+          <label>dy <input type="number" id="pinDy" value="0" style="width:56px"></label>
+          <label>z <input type="number" id="pinZ" value="10" style="width:52px" title="层级：0=文字下方(水印)，10=文字上方，更大=压过其他贴图"></label>
+        </div>
+        <div id="cfgBg" class="cfg" hidden>
+          <label>变暗 <select id="bgDim"><option value="0.3">30% 轻微</option><option value="0.5" selected>50% 适中（推荐）</option><option value="0.7">70% 深暗</option><option value="0.9">90% 极暗</option></select></label>
+          <label>区域 <select id="bgRegion"><option value="page">整页</option><option value="content">仅内容区</option></select></label>
+          <span style="font-size:12px;color:#64748b">作用域由插入位置决定：放在 <code>##</code> 之前 = 全局所有页；放在某节内 = 仅该节背景（覆盖全局）</span>
+        </div>
+        <div id="cfgLogo" class="cfg" hidden><span style="font-size:12px;color:#64748b">logo 显示在导航栏左上（site 风格）或页面右上角，无需任何参数。</span></div>
+        <div class="modal-actions">
+          <button type="button" id="btnPick">选择图片并上传…</button>
+          <input type="file" id="imgFile" accept="image/png,image/jpeg,image/gif,image/webp" hidden>
+          <button type="button" class="ghost" id="btnModalClose">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 编辑器右键菜单：图片四类型 + 基础编辑 -->
+    <div id="ctxMenu" hidden>
+      <button type="button" data-act="figure">插入 · 流式配图</button>
+      <button type="button" data-act="pin">插入 · 贴图（九宫格）</button>
+      <button type="button" data-act="background">插入 · 背景图</button>
+      <button type="button" data-act="logo">插入 · Logo</button>
+      <hr>
+      <button type="button" data-act="copy">复制</button>
+      <button type="button" data-act="paste">粘贴</button>
+      <button type="button" data-act="selectAll">全选</button>
+      <button type="button" data-act="delete">删除</button>
+    </div>
+    <div id="rcTip" hidden>💡 在稿件区右键，可快速插入图片</div>
+
+    <div id="lint" class="panel warn" hidden></div>
+    <div id="outline" class="panel info" hidden></div>
+
+    <details class="contract">
+      <summary>稿件格式契约（点开看常见错误）</summary>
+      <ul>
+        <li>标记符后必须有一个空格：<code># 标题</code>、<code>## 节</code>、<code>&gt; 引导语</code>、<code>- 要点</code>、<code>1. 步骤</code></li>
+        <li>一条要点 = 一整行：<code>- </code>开头、内容同行，行尾不要手写 <code>-</code> 连接下一行</li>
+        <li><code># </code>（必须有）= 封面；<code>## </code> = 一页一节；超过每页条数自动拆「（续）」页</li>
+        <li>格式错误会被服务明确拒绝（400/422），不会猜测意图</li>
+      </ul>
+    </details>
+
+    <div class="row options">
+      <div class="field">
+        <label for="style">style（风格骨架）</label>
+        <select id="style"><option selected>site</option><option>cards</option><option>classic</option><option>swiss</option><option>midnight</option></select>
+      </div>
+      <div class="field">
+        <label for="industry">industry（行业色板 · cards / site 使用）</label>
+        <select id="industry" title="site / cards 风格使用行业色板"><option value="tech">科技/互联网</option><option value="finance">金融</option><option value="edu">教育</option><option value="energy">制造/能源</option><option value="gov">政企/国企</option><option value="med">医疗健康</option></select>
+      </div>
+      <div class="field">
+        <label for="aspect">aspect_ratio</label>
+        <select id="aspect"><option>16:9</option><option>4:3</option><option>A1</option></select>
+      </div>
+      <div class="field">
+        <label for="bullets">max_bullets（每页条数上限）</label>
+        <input type="number" id="bullets" min="1" max="12" value="6" style="width:80px">
+      </div>
+      <div class="field">
+        <label for="name">name（可选，元数据）</label>
+        <input type="text" id="name" placeholder="留空">
+      </div>
+      <div class="field">
+        <label for="title">title（可选，元数据）</label>
+        <input type="text" id="title" placeholder="留空">
+      </div>
+      <div class="field">
+        <label for="author">author（元数据）</label>
+        <input type="text" id="author" value="pptsvc">
+      </div>
+    </div>
+
+    <div class="row actions">
+      <button class="primary" id="btnGen" type="button">生成 PPTX</button>
+      <button class="plain" id="btnDry" type="button">仅预检（dry_run）</button>
+      <span class="stats">Ctrl+Enter 快速生成 · 预检只渲染校验、不产出文件</span>
+    </div>
+  </section>
+
+  <!-- ============ 右列：样式预览 + 响应 ============ -->
+  <div class="col">
+
+  <!-- 样式预览（真实渲染 HTML，与转换器同源） -->
+  <section class="card">
+    <h2>样式预览 · 真实渲染</h2>
+    <div class="pvbar">
+      <div id="pvTabs" class="pvtabs"></div>
+      <label style="font-size:12px;color:#475569;display:inline-flex;align-items:center;gap:4px;margin-left:auto">
+        <input type="checkbox" id="pvGrid"> 参考线
+      </label>
+      <span class="stats" id="pvNote"></span>
+    </div>
+    <div id="pvEmpty" class="pv-empty">粘贴合规稿件后，此处按当前主题显示真实版式<br>（与服务端送入转换器的 HTML 完全一致）</div>
+    <div id="pvFrameWrap" class="pvframe" hidden>
+      <iframe id="pvFrame" title="slide preview" sandbox=""></iframe>
+    </div>
+    <div class="hint">切换 theme / 比例 / 内容自动刷新；预览与最终 PPTX 同版式同配色，浏览器字体可能与容器渲染略有差异。</div>
+  </section>
+
+  <!-- ======================= 响应 ======================= -->
+  <section class="card">
+    <h2>响应</h2>
+    <div id="empty" class="empty">尚未发送请求</div>
+
+    <div id="result" hidden>
+      <div class="statusline">
+        <span id="badge" class="badge ok"></span>
+        <span id="meta" class="stats"></span>
+      </div>
+      <div class="meta-grid">
+        <div><label>task_id</label><code id="taskId"></code></div>
+        <div><label>页数</label><span class="v" id="slides"></span></div>
+        <div><label>文件大小</label><span class="v" id="bytes"></span></div>
+        <div><label>耗时</label><span class="v" id="timings"></span></div>
+      </div>
+      <div id="checksWrap">
+        <label>结构校验</label>
+        <ul id="checks"></ul>
+      </div>
+      <a id="download" class="primary" href="#">下载 PPTX</a>
+      <details><summary>原始 JSON</summary><pre id="raw"></pre></details>
+    </div>
+
+    <div id="error" hidden>
+      <div class="statusline">
+        <span id="errBadge" class="badge bad"></span>
+        <span id="errMeta" class="stats"></span>
+      </div>
+      <div class="panel err" id="errBody" style="margin-top:0"></div>
+      <details><summary>原始响应</summary><pre id="errRaw"></pre></details>
+    </div>
+  </section>
+  </div>
+</main>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const md = $("md");
+const STORE_KEY = "pptsvc.form.markdown";
+let timer = null;
+
+/* ---------- 示例稿件（与 examples/manuscript.md 一致） ---------- */
+const EXAMPLE = `# 职业规划展示
+
+> 从初心出发，聚焦目标岗位，规划下一步行动路径
+
+---
+
+## 初心起源
+
+- 从一次跨部门协作中意识到：把复杂方案讲清楚，本身就是稀缺能力
+- 过去两年独立完成 12 场方案汇报，逐步形成结构化表达的稳定方法
+- 希望把这种能力沉淀为职业方向，而不只是临时任务
+
+---
+
+## 目标岗位
+
+> 核心判断：表达与结构化能力，是可迁移的职业资产
+
+- 岗位方向：解决方案 / 产品运营
+- 核心要求：结构化表达、跨团队协作、行业理解
+- 经验匹配：12 场方案汇报 + 3 个跨部门项目
+
+---
+
+## 能力盘点
+
+- 结构化表达：可独立完成从提纲到成稿的全流程
+- 方案可视化：熟练使用图表与版式传达信息
+- 跨团队协作：与研发、市场、销售均有稳定协作经验
+- 需求分析：能把模糊诉求拆解为可执行方案
+- 数据分析：掌握基础统计与可视化工具
+- 行业理解：对本行业头部公司的产品路线有持续跟踪
+- 项目管理：主导过 3 个中型项目并按期交付
+- 公开表达：累计对外分享 12 次，反馈良好
+
+---
+
+## 行动计划
+
+1. 第 1-2 月：补齐数据分析短板，完成两个实战分析
+2. 第 3-4 月：沉淀作品集，覆盖三类典型方案场景
+3. 第 5-6 月：定向投递并完成岗位转型
+`;
+
+/* ---------- 粘贴内容实时自检：专抓"标记后缺空格/单独成行" ---------- */
+function cut(s) { return s.length > 18 ? s.slice(0, 18) + "…" : s; }
+
+function lint(text) {
+  const warns = [];
+  const lines = text.split(/\r?\n/);
+  let hasH1 = false;
+  lines.forEach((raw, i) => {
+    const line = raw.trim();
+    if (!line || /^(-{3,}|\*{3,}|_{3,})$/.test(line)) return;
+    if (/^#{1,6}\s/.test(line)) { if (/^#\s/.test(line)) hasH1 = true; return; }
+    const n = i + 1;
+    if (/^#{1,6}\S/.test(line)) warns.push(`第 ${n} 行「${cut(line)}」：标题标记后缺一个空格（# 与文字之间要有空格）`);
+    else if (/^[-*+]\S/.test(line)) warns.push(`第 ${n} 行「${cut(line)}」：列表标记后缺一个空格（- 与内容之间要有空格）`);
+    else if (/^[-*+]$/.test(line)) warns.push(`第 ${n} 行："-" 单独成行：列表内容必须与 "- " 写在同一行`);
+    else if (/^\d+[.)]\S/.test(line)) warns.push(`第 ${n} 行「${cut(line)}」：有序列表标记后缺一个空格（1. 与内容之间要有空格）`);
+    else if (/^>$/.test(line)) warns.push(`第 ${n} 行：">" 单独成行：引用内容必须与 "> " 写在同一行`);
+  });
+  if (text.trim() && !hasH1) warns.push("全文缺少一级标题（需要一行「# 标题」作为封面）");
+  return warns.slice(0, 8);
+}
+
+/* ---------- 分页预览：与服务端同公式（高度感知 + 条数上限） ---------- */
+const NARROW = new Set(" \t.,:;'\"!?()[]{}/\\|·-_=+*<>@#$%^&`~");
+const GEOM = { "16:9": [1100, 720], "4:3": [780, 720], A1: [2064, 3178] };
+const METRICS = { classic: [236, 26, 1.45, 22, 12], swiss: [220, 25, 1.5, 20, 12], midnight: [230, 25, 1.5, 21, 12], cards: [214, 24, 1.5, 14, 12], site: [184, 24, 1.5, 18, 74] };
+
+function currentTheme() {
+  const style = $("style").value;
+  return style === "cards" || style === "site" ? style + "." + $("industry").value : style;
+}
+
+function units(s) {
+  let t = 0;
+  for (const ch of s) t += NARROW.has(ch) ? 0.40 : (ch.codePointAt(0) >= 0x2e80 ? 1.0 : 0.58);
+  return t;
+}
+
+function outline(text, limit, aspect, theme) {
+  const [w, h] = GEOM[aspect] || GEOM["16:9"];
+  const base = (theme || "classic").split(".")[0];
+  const isCards = base === "cards";
+  const [top, font, line, margin] = METRICS[base] || METRICS.classic;
+  const budget = (h - 48 - top) / 1.05;
+  const liHeight = isCards
+    ? (item) => { const tw = Math.max(200, w - 2 * 16 - 76 - 18); return Math.max(1, Math.ceil(units(item) / (tw / font))) * font * line + 32 + 14; }
+    : (item) => Math.max(1, Math.ceil(units(item) / (w / font))) * font * line + margin;
+  const sections = [];
+  let cur = null;
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (/^##\s/.test(line)) { cur = { title: line.replace(/^##\s+/, ""), items: [] }; sections.push(cur); }
+    else if ((/^[-*+]\s/.test(line) || /^\d+[.)]\s/.test(line)) && cur) cur.items.push(line.replace(/^([-*+]|\d+[.)])\s+/, ""));
+  }
+  const parts = sections.map((s, i) => {
+    let used = 0, count = 0, pages = 1;
+    for (const item of s.items) {
+      const ih = liHeight(item);
+      if (count > 0 && (count >= limit || used + ih > budget)) { pages++; used = ih; count = 1; }
+      else { used += ih; count++; }
+    }
+    return { idx: i + 1, title: s.title, items: s.items.length, pages };
+  });
+  const total = 1 + parts.reduce((a, b) => a + b.pages, 0);
+  return { parts, total };
+}
+
+function refresh() {
+  const text = md.value;
+  const lines = text.split(/\r?\n/);
+  $("stats").textContent = `${lines.length} 行 · ${text.length} 字符`;
+
+  const warns = lint(text);
+  const lintEl = $("lint");
+  lintEl.hidden = warns.length === 0;
+  lintEl.innerHTML = "";
+  if (warns.length) {
+    const b = document.createElement("b"); b.textContent = "格式自检（发送前建议修正，服务端也会拦截）：";
+    lintEl.appendChild(b);
+    const ul = document.createElement("ul");
+    warns.forEach((w) => { const li = document.createElement("li"); li.textContent = w; ul.appendChild(li); });
+    lintEl.appendChild(ul);
+  }
+
+  const outEl = $("outline");
+  outEl.innerHTML = "";
+  if (text.trim() && !warns.length) {
+    const limit = Number($("bullets").value) || 6;
+    const o = outline(text, limit, $("aspect").value, currentTheme());
+    const head = document.createElement("div");
+    head.textContent = `解析预览：封面 + ${o.parts.length} 节 ≈ ${o.total} 页（按高度自动分页，每页上限 ${limit} 条）`;
+    outEl.appendChild(head);
+    const ul = document.createElement("ul");
+    o.parts.forEach((p) => {
+      const li = document.createElement("li");
+      const split = p.pages > 1 ? ` → ${p.pages} 页（自动拆「（续）」）` : " → 1 页";
+      li.textContent = `${String(p.idx).padStart(2, "0")} ${p.title} · ${p.items} 条${split}`;
+      ul.appendChild(li);
+    });
+    outEl.appendChild(ul);
+    outEl.hidden = false;
+  } else {
+    outEl.hidden = true;
+  }
+
+  try { localStorage.setItem(STORE_KEY, text); } catch (e) { /* 隐私模式等 */ }
+  schedulePreview();
+}
+
+/* ---------- 请求 ---------- */
+function payload(dryRun) {
+  return {
+    markdown: md.value,
+    aspect_ratio: $("aspect").value,
+    theme: currentTheme(),
+    max_bullets: Number($("bullets").value) || 6,
+    name: $("name").value.trim() || null,
+    title: $("title").value.trim() || null,
+    author: $("author").value.trim() || "pptsvc",
+    dry_run: dryRun,
+  };
+}
+
+function setLoading(on, label) {
+  ["btnGen", "btnDry"].forEach((id) => { $(id).disabled = on; });
+  $("btnGen").textContent = on ? (label || "转换中…") : "生成 PPTX";
+}
+
+function fmtBytes(n) {
+  if (n == null) return "—";
+  return n >= 1048576 ? (n / 1048576).toFixed(2) + " MB" : (n / 1024).toFixed(1) + " KB";
+}
+
+function renderChecks(checks) {
+  const ul = $("checks");
+  ul.innerHTML = "";
+  Object.entries(checks).forEach(([name, ok]) => {
+    const li = document.createElement("li");
+    const mark = document.createElement("span");
+    mark.className = ok ? "yes" : "no";
+    mark.textContent = ok ? "✓" : "✗";
+    const label = document.createElement("span");
+    label.textContent = name;
+    li.append(mark, label);
+    ul.appendChild(li);
+  });
+}
+
+function renderOk(status, ms, body) {
+  $("empty").hidden = true; $("error").hidden = true; $("result").hidden = false;
+  const badge = $("badge");
+  badge.className = "badge ok";
+  badge.textContent = `${status} OK`;
+  const t = body.timings_ms || {};
+  const scaleNote = body.height_scale && body.height_scale < 1
+    ? ` · 已自动降密重排（scale ${body.height_scale}）` : "";
+  const verified = body.dry_run ? " · 版式已验证，可直接生成" : "";
+  $("meta").textContent = `${ms} ms（渲染 ${t.render ?? "—"} · 转换 ${t.convert ?? "—"} · 校验 ${t.verify ?? "—"}）${scaleNote}${verified}`;
+  $("taskId").textContent = body.task_id || "—";
+  $("slides").textContent = body.slides ?? "—";
+  $("bytes").textContent = body.dry_run ? "dry_run" : fmtBytes(body.artifact_bytes);
+  $("timings").textContent = body.dry_run ? "—" : `${ms} ms`;
+  const dl = $("download");
+  if (body.download_url) { dl.href = body.download_url; dl.style.display = ""; }
+  else dl.style.display = "none";
+  if (body.checks && body.checks.checks) renderChecks(body.checks.checks);
+  $("raw").textContent = JSON.stringify(body, null, 2);
+}
+
+function renderErr(status, ms, body, rawText) {
+  $("empty").hidden = true; $("result").hidden = true; $("error").hidden = false;
+  const badge = $("errBadge");
+  badge.className = "badge bad";
+  badge.textContent = status === 0 ? "网络错误" : `${status}`;
+  $("errMeta").textContent = `${ms} ms`;
+  const el = $("errBody");
+  el.innerHTML = "";
+  const detail = body && body.detail;
+  const add = (text) => { const d = document.createElement("div"); d.textContent = text; el.appendChild(d); };
+  if (typeof detail === "string") add(detail);
+  else if (Array.isArray(detail)) detail.forEach((d) => add(`${(d.loc || []).join(".")}：${d.msg}`));
+  else if (detail && typeof detail === "object") {
+    if (detail.message) add(String(detail.message));
+    (detail.errors || []).forEach((e) => add(`• ${e}`));
+  }
+  else add(rawText ? rawText.slice(0, 500) : "无响应体");
+  $("errRaw").textContent = rawText || "";
+  /* 422 会点名 slideNN.html：预览自动跳到出错页并标红 */
+  const hit = JSON.stringify(body && body.detail ? body.detail : "").match(/slide(\d+)\.html/i);
+  if (hit) pvFlag(Number(hit[1]) - 1);
+}
+
+async function send(dryRun) {
+  if (!md.value.trim()) { md.focus(); return; }
+  const data = payload(dryRun);
+  setLoading(true, dryRun ? "预检中…" : "转换中…");
+  const started = performance.now();
+  try {
+    const res = await fetch("/v1/decks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    const ms = Math.round(performance.now() - started);
+    const text = await res.text();
+    let body = null;
+    try { body = JSON.parse(text); } catch (e) { /* 非 JSON 错误体 */ }
+    if (res.ok) renderOk(res.status, ms, body);
+    else renderErr(res.status, ms, body, text);
+  } catch (err) {
+    renderErr(0, Math.round(performance.now() - started), null, String(err));
+  } finally {
+    setLoading(false);
+  }
+}
+
+/* ---------- 样式预览：POST /v1/preview，真实渲染 HTML ---------- */
+let pvTimer = null;
+let pvSeq = 0;
+let pvState = { pages: [], idx: 0, canvas: [1280, 720] };
+
+function pvClear() {
+  pvState.pages = [];
+  $("pvTabs").innerHTML = "";
+  $("pvNote").textContent = "";
+  $("pvFrameWrap").hidden = true;
+  $("pvEmpty").hidden = false;
+}
+
+function pvOverlay(kind, w, h) {
+  if (!$("pvGrid").checked) return "";
+  const base = (pvState.theme || "classic").split(".")[0];
+  const m = METRICS[base] || METRICS.classic;
+  const topbar = m[4] || 0, zoneBottom = h - 16, zh = zoneBottom - topbar;
+  // Page nine-grid between topbar and footbar (pin= reference frame).
+  const gl = (l, t, ww, hh) =>
+    `position:absolute;left:${Math.round(l)}px;top:${Math.round(t)}px;width:${Math.round(ww)}px;height:${Math.round(hh)}px;background:rgba(59,130,246,.25)`;
+  let out = `<div style="position:absolute;left:0;top:0;width:${w}px;height:${h}px;pointer-events:none">`
+    + `<div style="${gl(w / 3, topbar, 1, zh)}"></div><div style="${gl(2 * w / 3, topbar, 1, zh)}"></div>`
+    + `<div style="${gl(0, topbar + zh / 3, w, 1)}"></div><div style="${gl(0, topbar + 2 * zh / 3, w, 1)}"></div>`;
+  // Secondary reference: the content region (dashed) where flow text lives.
+  if (kind !== "cover" || base === "site") {
+    let x, y, bw, bh;
+    if (kind === "cover") { x = 110; y = 450; bw = w - 220; bh = h - 450 - 48; }
+    else { y = (METRICS[base] || METRICS.classic)[0]; x = 90; bw = w - 180; bh = h - 48 - y; }
+    out += `<div style="position:absolute;left:${x}px;top:${y}px;width:${Math.round(bw)}px;height:${Math.round(bh)}px;border:1px dashed rgba(15,118,161,.4)"></div>`;
+  }
+  return out + `</div>`;
+}
+$("pvGrid").addEventListener("change", () => { if (!$("pvFrameWrap").hidden) pvShow(pvState.idx); });
+
+function pvShow(idx) {
+  const page = pvState.pages[idx];
+  const wrap = $("pvFrameWrap");
+  if (!page || wrap.hidden) return;
+  pvState.idx = idx;
+  const [w, h] = pvState.canvas;
+  const frame = $("pvFrame");
+  frame.srcdoc = page.html.replace("</body>", pvOverlay(page.kind, w, h) + "</body>");
+  const scale = wrap.clientWidth / w;
+  frame.style.width = w + "px";
+  frame.style.height = h + "px";
+  frame.style.transform = "scale(" + scale + ")";
+  wrap.style.height = Math.round((wrap.clientWidth * h) / w) + "px";
+  document.querySelectorAll("#pvTabs button").forEach((b, i) => {
+    b.classList.toggle("on", i === idx);
+  });
+}
+
+/* 校验失败时跳到出错页并标红该标签 */
+function pvFlag(idx) {
+  const page = pvState.pages[idx];
+  if (!page) return;
+  const tabs = document.querySelectorAll("#pvTabs button");
+  tabs.forEach((b) => b.classList.remove("bad"));
+  if (tabs[idx]) tabs[idx].classList.add("bad");
+  if (!$("pvFrameWrap").hidden) pvShow(idx);
+}
+
+function schedulePreview() {
+  clearTimeout(pvTimer);
+  pvTimer = setTimeout(fetchPreview, 300);
+}
+
+async function fetchPreview() {
+  const text = md.value;
+  if (!text.trim() || lint(text).length) { pvClear(); return; }
+  const seq = ++pvSeq;
+  try {
+    const res = await fetch("/v1/preview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        markdown: text,
+        aspect_ratio: $("aspect").value,
+        theme: currentTheme(),
+        max_bullets: Number($("bullets").value) || 6,
+      }),
+    });
+    if (seq !== pvSeq) return;
+    if (!res.ok) { pvClear(); return; }
+    const body = await res.json();
+    if (seq !== pvSeq) return;
+    pvState = {
+      pages: body.pages,
+      idx: Math.min(pvState.idx, body.pages.length - 1),
+      canvas: body.canvas,
+      theme: body.theme,
+    };
+    const tabs = $("pvTabs");
+    tabs.innerHTML = "";
+    body.pages.forEach((p, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = p.kind === "cover" ? "封面" : "内容 " + i;
+      b.addEventListener("click", () => pvShow(i));
+      tabs.appendChild(b);
+    });
+    $("pvNote").textContent = `共 ${body.slides} 页`;
+    $("pvEmpty").hidden = true;
+    $("pvFrameWrap").hidden = false;
+    pvShow(pvState.idx);
+  } catch (e) { if (seq === pvSeq) pvClear(); }
+}
+
+/* ---------- 健康检查 ---------- */
+async function checkHealth() {
+  const el = $("health");
+  try {
+    const res = await fetch("/healthz");
+    const h = await res.json();
+    if (h.ok) { el.className = "badge ok"; el.textContent = `● 正常 · node ${h.node} · 并发 ${h.max_concurrency}`; }
+    else { el.className = "badge bad"; el.textContent = `● 异常 ${JSON.stringify(h.checks)}`; }
+  } catch (e) { el.className = "badge bad"; el.textContent = "● 服务不可达"; }
+}
+
+/* ---------- 绑定 ---------- */
+md.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(refresh, 200); });
+md.addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); send(false); } });
+$("bullets").addEventListener("input", refresh);
+$("aspect").addEventListener("change", refresh);
+$("style").addEventListener("change", () => {
+  const uses = ["cards", "site"].includes($("style").value);
+  $("industry").classList.toggle("off", !uses);
+  $("industry").title = uses ? "" : "请先将上方 style 切换为 cards 或 site";
+  refresh();
+});
+$("industry").addEventListener("change", refresh);
+window.addEventListener("resize", () => pvShow(pvState.idx));
+$("btnGen").addEventListener("click", () => send(false));
+$("btnDry").addEventListener("click", () => send(true));
+$("btnExample").addEventListener("click", () => { md.value = EXAMPLE; refresh(); });
+$("btnClear").addEventListener("click", () => { md.value = ""; refresh(); md.focus(); });
+
+function insertAtCursor(text) {
+  const el = md;
+  const start = el.selectionStart ?? el.value.length;
+  const end = el.selectionEnd ?? start;
+  const before = el.value.slice(0, start);
+  const pad = before && !before.endsWith("\n") ? "\n\n" : (before.endsWith("\n\n") ? "" : "\n");
+  el.value = before + pad + text + "\n" + el.value.slice(end);
+  el.selectionStart = el.selectionEnd = start + pad.length + text.length;
+  el.focus();
+  refresh();
+}
+
+let modalType = "figure";
+function syncModalCfg() {
+  $("cfgFigure").hidden = modalType !== "figure";
+  $("cfgPin").hidden = modalType !== "pin";
+  $("cfgBg").hidden = modalType !== "background";
+  $("cfgLogo").hidden = modalType !== "logo";
+  document.querySelectorAll("#imgModal .typecard").forEach((c) =>
+    c.classList.toggle("on", c.dataset.type === modalType));
+}
+function openImgModal(type) {
+  modalType = type || modalType || "figure";
+  syncModalCfg();
+  $("imgModal").hidden = false;
+}
+document.querySelectorAll("#imgModal .typecard").forEach((c) =>
+  c.addEventListener("click", () => { modalType = c.dataset.type; syncModalCfg(); }));
+$("btnImg").addEventListener("click", () => openImgModal());
+$("btnModalClose").addEventListener("click", () => { $("imgModal").hidden = true; });
+$("imgModal").addEventListener("click", (e) => { if (e.target.id === "imgModal") $("imgModal").hidden = true; });
+$("pinGrid").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-pin]");
+  if (!btn) return;
+  if ($("pinMulti").checked) {
+    btn.classList.toggle("on");  // 多选：点击切换（至少保留一格）
+    if (!document.querySelector("#pinGrid button.on")) btn.classList.add("on");
+  } else {
+    document.querySelectorAll("#pinGrid button").forEach(b => b.classList.toggle("on", b === btn));
+  }
+});
+
+$("btnPick").addEventListener("click", () => $("imgFile").click());
+$("figFill").addEventListener("change", () => {
+  const fill = $("figFill").checked;
+  $("figSizeLbl").hidden = fill;
+  $("figPosLbl").hidden = fill;
+  $("figFillZ").hidden = !fill;
+});
+$("pinMulti").addEventListener("change", () => {
+  if (!$("pinMulti").checked) {
+    // 关闭多选：回到恰好一格
+    const on = document.querySelectorAll("#pinGrid button.on");
+    if (on.length !== 1) {
+      on.forEach((b, i) => b.classList.toggle("on", i === 0));
+      if (!on.length) document.querySelector('#pinGrid button[data-pin="c"]').classList.add("on");
+    }
+  }
+});
+$("imgFile").addEventListener("change", async () => {
+  const file = $("imgFile").files[0];
+  if (!file) return;
+  const role = modalType;
+  const original = $("btnPick").textContent;
+  $("btnPick").textContent = "上传中…";
+  $("btnPick").disabled = true;
+  try {
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch("/v1/assets", { method: "POST", body: fd });
+    const body = await res.json();
+    if (!res.ok) throw new Error(typeof body.detail === "string" ? body.detail : res.status);
+    const alt = role === "figure" ? "图片说明" : role === "pin" ? "贴图" : role;
+    let suffix = "";
+    if (role === "figure") {
+      if ($("figFill").checked) {
+        const fz = parseInt($("figZ").value || "10", 10);
+        suffix = !Number.isNaN(fz) && fz !== 10 ? `{fill, z=${fz}}` : "{fill}";
+      } else {
+        suffix = `{${$("imgSize").value},${$("imgPos").value}}`;
+      }
+    } else if (role === "pin") {
+      const sel = [...document.querySelectorAll("#pinGrid button.on")].map(b => b.dataset.pin);
+      const parts = [`pin=${sel.join("+")}`, `w=${$("pinW").value || 30}%`];
+      const dx = parseInt($("pinDx").value || "0", 10) || 0;
+      const dy = parseInt($("pinDy").value || "0", 10) || 0;
+      const z = parseInt($("pinZ").value || "10", 10);
+      if (dx) parts.push(`dx=${dx}`);
+      if (dy) parts.push(`dy=${dy}`);
+      if (!Number.isNaN(z) && z !== 10) parts.push(`z=${z}`);
+      suffix = `{${parts.join(", ")}}`;
+    } else if (role === "background") {
+      const dim = $("bgDim").value || "0.5";
+      suffix = $("bgRegion").value === "content"
+        ? `{region=content, dim=${dim}}` : `{dim=${dim}}`;
+    }
+    insertAtCursor(`![${alt}](${body.path})${suffix}`);
+    $("imgModal").hidden = true;
+  } catch (err) {
+    alert("上传失败: " + err.message);
+  } finally {
+    $("btnPick").textContent = original;
+    $("btnPick").disabled = false;
+    $("imgFile").value = "";
+  }
+});
+
+/* ---------- 编辑器右键菜单 ---------- */
+function toast(msg) {
+  const el = $("rcTip");
+  el.textContent = msg;
+  el.hidden = false;
+  setTimeout(() => { el.hidden = !!localStorage.rcTipShown; }, 2200);
+}
+function caretToClickLine(el, ev) {
+  // 行级定位：把光标移到右键点击所在行的行首（插入点跟随右键位置）
+  const rect = el.getBoundingClientRect();
+  const style = getComputedStyle(el);
+  const padT = parseFloat(style.paddingTop) || 0;
+  const lineH = parseFloat(style.lineHeight) || 24;
+  const line = Math.max(0, Math.floor((ev.clientY - rect.top - padT + el.scrollTop) / lineH));
+  let idx = 0;
+  for (let i = 0; i < line && idx < el.value.length; i++) {
+    const nl = el.value.indexOf("\n", idx);
+    if (nl === -1) { idx = el.value.length; break; }
+    idx = nl + 1;
+  }
+  el.selectionStart = el.selectionEnd = idx;
+  el.focus();
+}
+md.addEventListener("contextmenu", (e) => {
+  e.preventDefault();
+  // 有选区时保留选区（菜单操作对象），无选区才把光标移到右键所在行
+  if (md.selectionStart === md.selectionEnd) caretToClickLine(md, e);
+  const menu = $("ctxMenu");
+  menu.hidden = false;
+  menu.style.left = Math.min(e.clientX, innerWidth - 190) + "px";
+  menu.style.top = Math.min(e.clientY, innerHeight - 300) + "px";
+  $("rcTip").hidden = true;
+  localStorage.rcTipShown = "1";
+});
+$("ctxMenu").addEventListener("click", async (e) => {
+  const act = e.target.dataset && e.target.dataset.act;
+  if (!act) return;
+  $("ctxMenu").hidden = true;
+  if (["figure", "pin", "background", "logo"].includes(act)) { openImgModal(act); return; }
+  md.focus();
+  if (act === "selectAll") { md.select(); return; }
+  if (act === "copy") {
+    const t = md.value.substring(md.selectionStart, md.selectionEnd);
+    try { await navigator.clipboard.writeText(t); } catch { toast("复制失败，请按 Ctrl+C"); }
+    return;
+  }
+  if (act === "paste") {
+    try {
+      const t = await navigator.clipboard.readText();
+      if (t) document.execCommand("insertText", false, t);
+    } catch { toast("浏览器限制菜单粘贴，请按 Ctrl+V"); }
+    return;
+  }
+  if (act === "delete") {
+    document.execCommand("delete");
+  }
+});
+document.addEventListener("click", (e) => {
+  if (!$("ctxMenu").hidden && !e.target.closest("#ctxMenu")) $("ctxMenu").hidden = true;
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") { $("ctxMenu").hidden = true; $("imgModal").hidden = true; }
+});
+if (!localStorage.rcTipShown) $("rcTip").hidden = false;
+
+try { md.value = localStorage.getItem(STORE_KEY) || ""; } catch (e) { /* ignore */ }
+refresh();
+checkHealth();
+</script>
+</body>
+</html>

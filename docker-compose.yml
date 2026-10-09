@@ -1,0 +1,27 @@
+# Development stack: source and templates are bind-mounted, so editing CSS or
+# Python code takes effect immediately (uvicorn --reload, no image rebuild).
+services:
+  pptsvc:
+    build:
+      context: .
+      args:
+        BASE_IMAGE: ${BASE_IMAGE:-docker.1ms.run/library/node:20-bookworm-slim}
+        DEBIAN_MIRROR: ${DEBIAN_MIRROR:-mirrors.tuna.tsinghua.edu.cn}
+        PLAYWRIGHT_DOWNLOAD_HOST: ${PLAYWRIGHT_DOWNLOAD_HOST:-https://cdn.npmmirror.com/binaries/playwright}
+    image: pptsvc:dev
+    container_name: pptsvc
+    ports:
+      - "${PPTSVC_PORT:-8000}:8000"
+    volumes:
+      # Only the directories you actually iterate on are mounted. The vendored
+      # converter stays in the image together with its node_modules, so a host
+      # node_modules (different platform) can never shadow the container's.
+      - ./app:/srv/pptsvc/app
+      - ./output:/srv/pptsvc/output
+    environment:
+      PPTSVC_OUTPUT_DIR: /srv/pptsvc/output
+      PPTSVC_MAX_CONCURRENCY: "${PPTSVC_MAX_CONCURRENCY:-2}"
+      PPTSVC_TIMEOUT_SECONDS: "${PPTSVC_TIMEOUT_SECONDS:-300}"
+      PPTSVC_KEEP_HTML: "1"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped

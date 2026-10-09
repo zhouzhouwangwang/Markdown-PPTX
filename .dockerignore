@@ -1,0 +1,11 @@
+output/
+tests/
+.git/
+.venv/
+.pytest_cache/
+**/__pycache__/
+**/*.pyc
+vendor/html2pptx/node_modules/
+.test-runtime/
+*.md
+.env

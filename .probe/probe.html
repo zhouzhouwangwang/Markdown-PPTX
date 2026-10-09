@@ -1,0 +1,39 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>capability probe</title>
+<style>
+  html, body { width: 1280px; height: 720px; margin: 0; overflow: hidden; }
+  * { box-sizing: border-box; }
+  body { font-family: "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; background: #f8fafc; }
+  .grad { position: absolute; left: 60px; top: 60px; width: 300px; height: 140px; background: linear-gradient(135deg, #0f172a 0%, #0369a1 100%); }
+  .shadow { position: absolute; left: 400px; top: 60px; width: 300px; height: 140px; background: #0f172a; box-shadow: 12px 12px 0 rgba(3, 105, 161, 0.35); }
+  .round { position: absolute; left: 740px; top: 60px; width: 300px; height: 140px; background: #0369a1; border-radius: 24px; }
+  .border { position: absolute; left: 1080px; top: 60px; width: 140px; height: 140px; border: 4px solid #0f172a; }
+  .card { position: absolute; left: 60px; top: 240px; width: 540px; height: 320px; background: #ffffff; border: 2px solid #e2e8f0; padding: 24px; }
+  .card h2 { margin: 0 0 12px; color: #0f172a; font-size: 30px; }
+  .card ul { margin: 0; padding-left: 24px; color: #334155; font-size: 22px; line-height: 1.5; }
+  .card li { margin: 0 0 10px; }
+  .railc { position: absolute; left: 640px; top: 240px; width: 240px; height: 320px; background: #0f172a; padding: 20px; }
+  .railc p { margin: 0; color: #7dd3fc; font-size: 24px; line-height: 1.5; }
+  .bignum { position: absolute; left: 920px; top: 240px; width: 300px; height: 320px; }
+  .bignum p.n { margin: 0; color: #0369a1; font-size: 120px; font-weight: 800; line-height: 1; }
+  .bignum p.t { margin: 12px 0 0; color: #0f172a; font-size: 26px; font-weight: 700; }
+</style></head>
+<body>
+  <div class="grad"></div>
+  <div class="shadow"></div>
+  <div class="round"></div>
+  <div class="border"></div>
+  <div class="card">
+    <h2>卡片布局</h2>
+    <ul>
+      <li>边框卡片内的列表文本</li>
+      <li>第二条要点内容</li>
+      <li>第三条要点内容</li>
+    </ul>
+  </div>
+  <div class="railc"><p>左侧色轨文字，用于两栏布局的窄栏探测</p></div>
+  <div class="bignum">
+    <p class="n">03</p>
+    <p class="t">大号数字编号</p>
+  </div>
+</body></html>
