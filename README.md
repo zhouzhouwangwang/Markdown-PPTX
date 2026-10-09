@@ -40,6 +40,7 @@
 
 **参考效果图**:
 `仅供演示，请勿用于其他用途`
+![控制台演示](assets/control_lab.png)
 ![首页演示](assets/example_1.png)
 ![内页演示](assets/example_2.png)
 ![内页演示](assets/example_3.png)
